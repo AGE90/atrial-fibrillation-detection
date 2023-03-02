@@ -1,0 +1,9 @@
+pyprojroot
+pathlib
+black
+ipykernel
+pandas
+missingno
+openpyxl
+matplotlib
+seaborn
