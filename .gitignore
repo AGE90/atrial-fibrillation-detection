@@ -161,3 +161,10 @@ cython_debug/
 
 # Exclude data from source control
 # /data/
+
+# Exclude files
+*.csv
+*.xls
+*.xlsx
+*.pdf
+*.npy

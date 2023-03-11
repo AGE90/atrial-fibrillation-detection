@@ -7,3 +7,5 @@ missingno
 openpyxl
 matplotlib
 seaborn
+scikit-learn
+xgboost
