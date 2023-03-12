@@ -3,13 +3,15 @@ import pandas as pd
 
 class MakeDataset:
     
-    def read_from_csv(self, path: str) -> pd.DataFrame:
+    def read_from_csv(self, path: str, sep: str = ',') -> pd.DataFrame:
         """_summary_
 
         Parameters
         ----------
         path : str
             _description_
+        sep : str, optional
+            _description_, by default ','
 
         Returns
         -------
@@ -17,7 +19,7 @@ class MakeDataset:
             _description_
         """
         
-        return pd.read_csv(path, sep=';', header=0, index_col=0)
+        return pd.read_csv(path, sep=sep, header=0, index_col=0)
     
     def read_from_np(self, path: str) -> np.ndarray:
         """_summary_
