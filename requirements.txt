@@ -10,3 +10,4 @@ seaborn
 scikit-learn
 xgboost
 lazypredict
+sklearn-genetic-opt
