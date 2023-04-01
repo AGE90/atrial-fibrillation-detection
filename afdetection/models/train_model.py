@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
+import logging
 
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-from sklearn.model_selection import GridSearchCV
 
 from sklearn_genetic import GASearchCV
 from sklearn_genetic.space import Categorical, Integer, Continuous
@@ -13,95 +15,75 @@ from afdetection.models.export_model import ExportModel
 class TrainModel:
     
     def __init__(self) -> None:
+
         self.estimators = {
             'RNDFOREST' : RandomForestClassifier(),
             'XGBOOST' : XGBClassifier()
         }
         
-        # self.param_grids = {
-        #     'RNDFOREST' : {
-        #         'n_estimators' : np.arange(40, 420, 20),
-        #         'max_features' : ['sqrt', 'log2'],
-        #         'max_depth' : [10, 20, 30, 40, 50, 60, 70, None],
-        #         'min_samples_split' : [2, 5, 10],
-        #         'min_samples_leaf' : [1, 2, 4],
-        #         'bootstrap' : [True, False]
-        #     },
-        #     'XGBOOST' : {
-        #         'n_estimators' : np.arange(40, 420, 20),
-        #         'max_depth' : np.arange(3, 20, 2),
-        #         'gamma': np.arange(1, 10),
-        #         'alpha' : np.arange(0, 20, 2),
-        #         'lambda' : np.arange(0, 1.1, 0.1),
-        #         'colsample_bytree' : np.arange(0.5, 1.1, 0.1),
-        #         'min_child_weight' : np.arange(0, 10)
-        #     }
-        # }
-        
         self.param_grids = {
             'RNDFOREST' : {
-                'n_estimators' : Integer(40, 400),
-                'max_features' : Categorical(['sqrt', 'log2']),
-                'max_depth' : Integer(10, 70),
-                'min_samples_split' : Integer(2, 10),
-                'min_samples_leaf' : Integer(1, 4),
-                'bootstrap' : Categorical([True, False])
+                'estimator__n_estimators' : Integer(10, 400),
+                'estimator__max_depth' : Categorical([None, 5, 10, 20]),
+                'estimator__min_samples_split' : Integer(2, 10),
+                'estimator__min_samples_leaf' : Integer(1, 4),
+                'estimator__max_features' : Categorical(['sqrt', 'log2'])
             },
             'XGBOOST' : {
-                'n_estimators' : Integer(40, 420),
-                'max_depth' : Integer(3, 20),
-                'gamma': Integer(1, 10),
-                'alpha' : Continuous(0, 20),
-                'lambda' : Continuous(0, 1),
-                'colsample_bytree' : Continuous(0.5, 1),
-                'min_child_weight' : Integer(0, 10)
+                'estimator__n_estimators' : Integer(40, 400),
+                'estimator__learning_rate' : Continuous(0.01, 0.2),
+                'estimator__max_depth' : Integer(3, 10),
+                'estimator__subsample' : Continuous(0.5, 1),
+                'estimator__colsample_bytree' : Continuous(0.5, 1),
+                'estimator__gamma': Integer(0, 1),
+                'estimator__reg_lambda' : Continuous(0, 10),
+                'estimator__reg_alpha' : Continuous(0, 10),
+                'estimator__min_child_weight' : Continuous(0, 10)
             }
         }
         
-    def grid_training(self, X: pd.DataFrame, y: pd.Series) -> None:
-        
-              
-        best_score = 999
-        best_model = None
-        
-        for name, estimator in self.estimators.items():
-            grid = GridSearchCV(
-                estimator=estimator,
-                param_grid=self.param_grids[name],
-                cv=3
-            ).fit(X, y)
-            
-            score = np.abs(grid.best_score_)
-            
-            if score < best_score:
-                best_score = score
-                best_model = grid.best_estimator_
-        
-        export = ExportModel()
-        export.model_export(best_model, best_score)
         
     def genopt_training(self, X: pd.DataFrame, y: pd.Series) -> None:
         
-        best_score = 999
-        best_model = None
+        assert not X.empty, "Input features X cannot be empty"
+        assert not y.empty, "Output values y cannot be empty"
+        assert X.shape[0] == y.shape[0], "Input features and output values must have the same number of samples"
+        assert not X.isnull().values.any(), "Input features X contains missing values"
+        assert not y.isnull().values.any(), "Output values y contains missing values"
         
+        # Set up logging
+        logging.basicConfig(level=logging.INFO)
+        
+        best_score = 0
+        best_model = None
+               
         for name, estimator in self.estimators.items():
+            logging.info(f"Performing evolutionary optimization over hyperparameters for {name}...")
+            
+            pipeline = Pipeline([
+                ('scaler', StandardScaler()),
+                ('estimator', estimator)
+            ])
+            
             evolved_estimator = GASearchCV(
-                estimator=estimator,
+                estimator=pipeline,
                 cv=3,
                 scoring='accuracy',
                 param_grid=self.param_grids[name],
                 n_jobs=-1,
                 verbose=True,
                 population_size=10,
-                generations=10
+                generations=5
             ).fit(X, y)
             
-            score = np.abs(evolved_estimator.best_score_)
+            score = evolved_estimator.best_score_
             
-            if score < best_score:
+            logging.info(f"Best {name} model has accuracy score of {score:.2f}")
+            
+            if score > best_score:
                 best_score = score
                 best_model = evolved_estimator.best_estimator_
-                
+        
+        logging.info(f"Exporting best model with accuracy score of {best_score:.2f}")  
         export = ExportModel()
         export.model_export(best_model, best_score)

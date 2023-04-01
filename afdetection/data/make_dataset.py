@@ -19,7 +19,7 @@ class MakeDataset:
             _description_
         """
         
-        return pd.read_csv(path, sep=sep, header=0, index_col=0)
+        return pd.read_csv(path, sep=sep, header=0)
     
     def read_from_np(self, path: str) -> np.ndarray:
         """_summary_

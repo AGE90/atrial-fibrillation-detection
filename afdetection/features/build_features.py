@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from typing import Tuple
-
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+from sklearn import set_config
+set_config(transform_output = "pandas")
 
 
 class BuildFeatures:
@@ -31,42 +32,13 @@ class BuildFeatures:
             _description_
         """
         
+        # Dictionary to hold values for ritmi column (encoding)
+        num_di = {'SR': 0, 'AF': 1, 'VA': 2}
+        dataset = dataset.replace({target: num_di})
+        
         X = dataset.drop(drop_cols, axis=1)
+        X = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(X)  
         y = dataset[target]
-        return X, y
-    
-    def transform_features_target(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """_summary_
-
-        Parameters
-        ----------
-        X : pd.DataFrame
-            _description_
-        y : pd.Series
-            _description_
-
-        Returns
-        -------
-        Tuple[np.ndarray, np.ndarray]
-            _description_
-        """
-        
-        # Mean imputation
-        imp_mean = SimpleImputer(missing_values=np.nan, strategy='mean')
-        X = imp_mean.fit_transform(X)
-        
-        # Scale data
-        scaler = StandardScaler()
-        X = scaler.fit_transform(X)
-        
-        # Encode labels
-        encoder = LabelEncoder()
-        y = encoder.fit_transform(y)
-        
         return X, y
     
     def spectral_entropy(

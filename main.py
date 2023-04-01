@@ -7,7 +7,6 @@ from afdetection.models.train_model import TrainModel
 if __name__=="__main__":
     
     make_data = MakeDataset()
-    
     dataset_DIR = path.data_raw_dir('dataset.csv')
     dataset = make_data.read_from_csv(dataset_DIR)
     
@@ -18,11 +17,5 @@ if __name__=="__main__":
         target='ritmi'
     )
     
-    X, y = build_features.transform_features_target(
-        X=X,
-        y=y
-    )
-    
     training = TrainModel()
-    # training.grid_training(X, y)
     training.genopt_training(X, y)
