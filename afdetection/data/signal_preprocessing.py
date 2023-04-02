@@ -200,4 +200,11 @@ class SignalPreprocessing:
             Transformed electrocardiogram array
         """
         
-        return (ecg - np.min(ecg)) / (np.max(ecg) - np.min(ecg))
+        a = np.transpose(ecg, (1, 0, 2)) - np.min(ecg, axis=1)
+        b = np.max(ecg, axis=1) - np.min(ecg, axis=1)
+        
+        out = np.ones(np.transpose(ecg, (1, 0, 2)).shape)
+        ecg = np.divide(a, b, out=out, where=(b != 0))
+        ecg = 2 * np.transpose(ecg, (1, 0, 2)) - 1
+        
+        return ecg

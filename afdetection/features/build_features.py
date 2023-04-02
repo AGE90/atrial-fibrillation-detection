@@ -41,6 +41,72 @@ class BuildFeatures:
         y = dataset[target]
         return X, y
     
+    def dominant_frequency(
+        self,
+        x: np.ndarray, 
+        fs: float, 
+        method: str = 'fft', 
+        nperseg: int = None, 
+    ) -> float:
+        """Computes the dominant frequency of a signal
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Input signal
+        fs : float
+            Sampling frequency of the signal in Hz
+        method : str, optional
+            'fft' or 'welch', by default 'fft'
+        nperseg : int, optional
+            Length of each segment for Welch's method, by default None
+
+        Returns
+        -------
+        float
+           Dominant frequency of the signal
+        
+        Raises
+        ------
+        ValueError
+            If a proper method is not selected
+        """
+        
+        # Compute power spectral density
+        if method == 'fft':
+            freqs, Pxx = signal.periodogram(x, fs)
+        elif method == 'welch':
+            freqs, Pxx = signal.welch(x, fs, nperseg=nperseg)
+        else:
+            raise ValueError('Invalid method: %s' % method)
+        
+        # Find index of maximum PSD value
+        max_psd_idx = np.argmax(Pxx)
+        dominant_freq = freqs[max_psd_idx]
+        
+        return dominant_freq
+    
+    def dominant_frequency_ecg(
+        self, 
+        ecg: np.ndarray,
+        fs: float,
+        method: str = 'fft', 
+        nperseg: int = None, 
+    ) -> np.ndarray:
+        
+        m, _, lead = ecg.shape
+        ecg_dominant_frequency = np.zeros((m, lead))
+        for i in range(m):
+            for j in range(lead):
+                ecg_dominant_frequency[i, j] = self.dominant_frequency(
+                    x=ecg[i, :, j].ravel(),
+                    fs=fs, 
+                    method=method, 
+                    nperseg=nperseg
+                )
+        
+        return ecg_dominant_frequency
+    
     def spectral_entropy(
         self,
         x: np.ndarray, 
@@ -68,7 +134,7 @@ class BuildFeatures:
         x : np.ndarray
             Input signal
         fs : float
-           Sampling frequency of the signal
+           Sampling frequency of the signal in Hz
         method : str, optional
             'fft' or 'welch', by default 'fft'
         nperseg : int, optional
@@ -97,10 +163,15 @@ class BuildFeatures:
 
         # Normalize the spectral density
         if normalize:
-            Pxx /= np.sum(Pxx)
+            # Pxx /= np.sum(Pxx)
+            out = np.ones(Pxx.shape)
+            sumpxx = np.sum(Pxx)
+            Pxx = np.divide(Pxx, sumpxx, out=out, where=(sumpxx != 0))
 
         # Compute spectral entropy
-        spectral_entropy = -np.sum(Pxx * np.log2(Pxx))
+        out = np.ones(Pxx.shape)
+        log2pxx = np.log2(Pxx, out=out, where=(Pxx > 0))
+        spectral_entropy = -np.sum(Pxx * log2pxx)
 
         return spectral_entropy
     
