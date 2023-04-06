@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from scipy import signal
+import pywt
+
 from typing import Tuple
 from sklearn.impute import SimpleImputer
 
@@ -197,3 +199,63 @@ class BuildFeatures:
                 )
         
         return ecg_spectral_entropy
+    
+    
+    def wavelet_features(
+            self, 
+            x: np.ndarray, 
+            wavelet: str = 'db4', 
+            level: int = 6        
+        ) -> np.ndarray:
+        """
+        Extracts wavelet features for the given ECG signal using the specified wavelet 
+        and decomposition level.
+
+        Parameters
+        ----------
+        x : array-like
+            Array of signal values
+        wavelet : str, optional
+            Name of the wavelet to use (default 'db4').
+        level : int, optional
+            Decomposition level (default 6).
+
+        Returns
+        -------
+        array-like
+            Array of wavelet features extracted from the ECG signal.
+        """
+        # Decompose the signal using the wavelet transform
+        coeffs = pywt.wavedec(x, wavelet=wavelet, level=level)
+
+        # Compute the energy values for each coefficient
+        energy = np.array([np.sum(np.square(c)) for c in coeffs])
+
+        # Compute the statistical measures for each coefficient
+        mean = np.array([np.mean(c) for c in coeffs])
+        variance = np.array([np.var(c) for c in coeffs])
+        std_dev = np.array([np.std(c) for c in coeffs])
+
+        # Concatenate the features into a single array
+        features = np.concatenate((energy, mean, variance, std_dev))
+
+        return features
+    
+    def wave_dec_coeffs_ecg(
+        self, 
+        ecg: np.ndarray,
+        wavelet: str = 'db4', 
+        level: int = 6, 
+    ) -> np.ndarray:
+        
+        m, _, lead = ecg.shape
+        ecg_wavelet_features = np.zeros((m, lead, (level+1)*4))
+        for i in range(m):
+            for j in range(lead):
+                ecg_wavelet_features[i, j, :] = self.wavelet_features(
+                    x=ecg[i, :, j].ravel(),
+                    wavelet=wavelet, 
+                    level=level
+                )
+        
+        return ecg_wavelet_features
