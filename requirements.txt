@@ -13,3 +13,5 @@ PyWavelets
 lazypredict
 sklearn-genetic-opt
 flask
+jupyter
+ipywidgets
