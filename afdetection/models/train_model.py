@@ -4,6 +4,7 @@ import logging
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
@@ -62,6 +63,7 @@ class TrainModel:
             
             pipeline = Pipeline([
                 ('scaler', StandardScaler()),
+                ('pca', PCA(n_components=0.95, svd_solver='full')),
                 ('estimator', estimator)
             ])
             
@@ -72,8 +74,8 @@ class TrainModel:
                 param_grid=self.param_grids[name],
                 n_jobs=-1,
                 verbose=True,
-                population_size=10,
-                generations=5
+                population_size=15,
+                generations=8
             ).fit(X, y)
             
             score = evolved_estimator.best_score_

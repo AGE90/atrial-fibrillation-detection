@@ -38,6 +38,7 @@ for dir_type in [
         ["data", "processed"],
         ["data", "interim"],
         ["data", "external"],
+        ["data", "ptbxl"],
         ["models"],
         ["notebooks"],
         ["references"],
